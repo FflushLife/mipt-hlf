@@ -1,9 +1,5 @@
 'use strict';
 
-// ****************************
-// app.js must be started before this script
-// ***************************
-
 const { Gateway, Wallets } = require('fabric-network');
 const FabricCAServices = require('fabric-ca-client');
 const path = require('path');
@@ -21,6 +17,11 @@ function prettyJSONString(inputString) {
 }
 
 async function main() {
+  if (process.argv.length < 3) {
+    console.log('PassportID was not passed in args! Return...');
+    return;
+  }
+
 	try {
 		// build an in memory object with the network configuration (also known as a connection profile)
 		const ccp = buildCCPOrg1();
@@ -31,6 +32,13 @@ async function main() {
 
 		// setup the wallet to hold the credentials of the application user
 		const wallet = await buildWallet(Wallets, walletPath);
+
+		// in a real application this would be done on an administrative flow, and only once
+		await enrollAdmin(caClient, wallet, mspOrg1);
+
+		// in a real application this would be done only when a new user was required to be added
+		// and would be part of an administrative flow
+		await registerAndEnrollUser(caClient, wallet, mspOrg1, org1UserId, 'org1.department1');
 
 		// Create a new gateway instance for interacting with the fabric network.
 		// In a real application this would be done as the backend server session is setup for
@@ -54,12 +62,9 @@ async function main() {
 			// Get the contract from the network.
 			const contract = network.getContract(chaincodeName);
 
-			// Let's try a query type operation (function).
-			// This will be sent to just one peer and the results will be shown.
-			console.log('\n--> Evaluate Transaction: GetAllCrowd, function returns all people on the ledger');
-			let result = await contract.evaluateTransaction('GetAllCrowd');
+			console.log(`\n--> Evaluate Transaction: ReadAsset, function returns ${process.argv[2]} attributes`);
+			let result = await contract.evaluateTransaction('ReadAsset', `${process.argv[2]}`);
 			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-
 		} finally {
 			// Disconnect from the gateway when the application is closing
 			// This will close all connections to the network
