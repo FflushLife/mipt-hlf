@@ -164,13 +164,14 @@ async function main() {
 				console.log(`*** Successfully caught the error: \n    ${error}`);
 			}
 
-//			console.log('\n--> Submit Transaction: TransferAsset asset1, transfer to new owner of Tom');
-//			await contract.submitTransaction('TransferAsset', 'asset1', 'Tom');
-//			console.log('*** Result: committed');
-
 			console.log('\n--> Evaluate Transaction: ReadAsset, function returns 1247666666 attributes');
 			result = await contract.evaluateTransaction('ReadAsset', '1247666666');
 			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
+
+			console.log('\n--> Evaluate Transaction: ReadAssetChanges, function returns 1247666666 history');
+			result = await contract.evaluateTransaction('ReadAssetChanges', '1247666666');
+			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
+//			console.log(`*** Result: ${result.toString()}`);
 		} finally {
 			// Disconnect from the gateway when the application is closing
 			// This will close all connections to the network

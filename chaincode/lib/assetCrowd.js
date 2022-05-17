@@ -1,9 +1,3 @@
-/*
- * Copyright IBM Corp. All Rights Reserved.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 'use strict';
 
 // Deterministic JSON.stringify()
@@ -138,16 +132,31 @@ class AssetCrowd extends Contract {
         return assetJSON && assetJSON.length > 0;
     }
 
-    // TransferAsset updates the owner field of asset with given id in the world state.
-//    async TransferAsset(ctx, id, newOwner) {
-//        const assetString = await this.ReadAsset(ctx, id);
-//        const asset = JSON.parse(assetString);
-//        const oldOwner = asset.Owner;
-//        asset.Owner = newOwner;
-//        // we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
-//        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
-//        return oldOwner;
-//    }
+    async ReadAssetChanges(ctx, passportId) {
+      const history = await ctx.stub.getHistoryForKey(passportId);
+      let allResults = [];
+      if (!history || history.length == 0) {
+          throw new Error(`No data for ${passportId} asset`);
+      }
+
+      while (true) {
+        let res = await history.next();
+        if (res.value && res.value.value.toString()) {
+          let jsonRes = {};
+          jsonRes.PassportID = res.value.passport_id;
+          jsonRes.Value = JSON.parse(res.value.value.toString('utf8'));
+          allResults.push(jsonRes);
+        }
+        if (res.done) {
+          console.log('end of data');
+          await history.close();
+          console.info(allResults);
+          return allResults;
+        }
+      }
+
+      return allResults;
+    }
 
     // GetAllAssets returns all assets found in the world state.
     async GetAllCrowd(ctx) {
