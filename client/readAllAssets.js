@@ -75,13 +75,6 @@ async function main() {
 		// setup the wallet to hold the credentials of the application user
 		const wallet = await buildWallet(Wallets, walletPath);
 
-		// in a real application this would be done on an administrative flow, and only once
-		await enrollAdmin(caClient, wallet, mspOrg1);
-
-		// in a real application this would be done only when a new user was required to be added
-		// and would be part of an administrative flow
-		await registerAndEnrollUser(caClient, wallet, mspOrg1, org1UserId, 'org1.department1');
-
 		// Create a new gateway instance for interacting with the fabric network.
 		// In a real application this would be done as the backend server session is setup for
 		// a user that has been verified.
@@ -104,67 +97,12 @@ async function main() {
 			// Get the contract from the network.
 			const contract = network.getContract(chaincodeName);
 
-			// Initialize a set of asset data on the channel using the chaincode 'InitLedger' function.
-			// This type of transaction would only be run once by an application the first time it was started after it
-			// deployed the first time. Any updates to the chaincode deployed later would likely not need to run
-			// an "init" type function.
-			console.log('\n--> Submit Transaction: InitLedger, function creates the initial set of assets on the ledger');
-			await contract.submitTransaction('InitLedger');
-			console.log('*** Result: committed');
-
 			// Let's try a query type operation (function).
 			// This will be sent to just one peer and the results will be shown.
 			console.log('\n--> Evaluate Transaction: GetAllCrowd, function returns all people on the ledger');
 			let result = await contract.evaluateTransaction('GetAllCrowd');
 			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
 
-			// Now let's try to submit a transaction.
-			// This will be sent to both peers and if both peers endorse the transaction, the endorsed proposal will be sent
-			// to the orderer to be committed by each of the peer's to the channel ledger.
-			console.log('\n--> Submit Transaction: CreateAsset, creates new asset with ID, color, owner, size, and appraisedValue arguments');
-			result = await contract.evaluateTransaction('AssetExists', '1247666666');
-      console.log(result.toString());
-      if (result.toString() == 'false') {
-			  result = await contract.submitTransaction('CreateAsset', '1247666666', 'Mikhail', 'Pavlov', 'Petrovsk', 'Lesnaya 14', '+79999999999', 'Maried');
-      }
-			console.log('*** Result: committed');
-			if (`${result}` !== '') {
-				console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-			}
-
-			console.log('\n--> Evaluate Transaction: ReadAsset, function returns an asset with a given assetID');
-			result = await contract.evaluateTransaction('ReadAsset', '1247666666');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-
-			console.log('\n--> Evaluate Transaction: AssetExists, function returns "true" if an asset with given assetID exist');
-			result = await contract.evaluateTransaction('AssetExists', '1247666666');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-
-			console.log('\n--> Submit Transaction: UpdateAsset 1534543643, changed Surname');
-			await contract.submitTransaction('UpdateAsset', '1534543643', 'Mikhail', 'Ivanovich', 'Petrovsk', 'Lesnaya 14', '+79999999999', 'Maried');
-			console.log('*** Result: committed');
-
-			console.log('\n--> Evaluate Transaction: ReadAsset, function returns "asset1" attributes');
-			result = await contract.evaluateTransaction('ReadAsset', '1247666666');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-
-			try {
-				// How about we try a transactions where the executing chaincode throws an error
-				// Notice how the submitTransaction will throw an error containing the error thrown by the chaincode
-				console.log('\n--> Submit Transaction: UpdateAsset 1247666666, 1247666666 does not exist and should return an error');
-				await contract.submitTransaction('UpdateAsset', '1247666667', 'Mikhail', 'Ivanovich', 'Petrovsk', 'Lesnaya 14', '+79999999999', 'Maried');
-				console.log('******** FAILED to return an error');
-			} catch (error) {
-				console.log(`*** Successfully caught the error: \n    ${error}`);
-			}
-
-			console.log('\n--> Evaluate Transaction: ReadAsset, function returns 1247666666 attributes');
-			result = await contract.evaluateTransaction('ReadAsset', '1247666666');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-
-			console.log('\n--> Evaluate Transaction: ReadAssetChanges, function returns 1247666666 history');
-			result = await contract.evaluateTransaction('ReadAssetChanges', '1247666666');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
 		} finally {
 			// Disconnect from the gateway when the application is closing
 			// This will close all connections to the network
